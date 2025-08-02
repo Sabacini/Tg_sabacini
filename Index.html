@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa Builder - Tap to Build</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--tg-theme-bg-color, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+            color: var(--tg-theme-text-color, white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .user-details {
+            flex: 1;
+            text-align: left;
+        }
+
+        .user-name {
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+            margin-bottom: 5px;
+        }
+
+        .user-stats {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            padding: 12px 8px;
+            border: none;
+            border-radius: 10px;
+            background: var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.2));
+            color: var(--tg-theme-text-color, white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .nav-btn.active {
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #ffd700, #ffed4e));
+            color: var(--tg-theme-button-text-color, #333);
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Стили для виллы */
+        .villa-container {
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 40%, #DEB887 100%);
+            border-radius: 20px;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+            min-height: 300px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .villa-stage {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.3));
+        }
+
+        .villa-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .villa-description {
+            font-size: 14px;
+            color: #34495e;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .villa-progress {
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.4);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(255,215,0,0.5);
+        }
+
+        .progress-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .score-display {
+            background: var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.2));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .score {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .score-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .build-button {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: none;
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #ffd700, #ffed4e));
+            color: var(--tg-theme-button-text-color, #333);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .build-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.6);
+        }
+
+        .build-button:active {
+            transform: scale(0.95);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .floating-points {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(1.2);
+            }
+        }
+
+        .villa-unlock {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 30px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: villaUnlock 3s ease-out forwards;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 300px;
+        }
+
+        @keyframes villaUnlock {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .shop-item, .achievement-item, .daily-bonus, .telegram-features {
+            background: var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.1));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .shop-item:hover, .achievement-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .shop-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .shop-item-title, .achievement-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+        }
+
+        .shop-item-level {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .shop-item-description, .achievement-description {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .shop-item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shop-item-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+        }
+
+        .buy-btn, .claim-btn, .share-btn, .feature-btn {
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #4CAF50, #45a049));
+            color: var(--tg-theme-button-text-color, white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .buy-btn:hover, .claim-btn:hover, .share-btn:hover, .feature-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .buy-btn:disabled, .claim-btn:disabled {
+            background: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .claim-btn {
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #FF6B6B, #FF8E8E));
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .share-btn {
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #2196F3, #1976D2));
+            width: 100%;
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .feature-btn {
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #9C27B0, #7B1FA2));
+            margin: 5px;
+            padding: 10px 20px;
+        }
+
+        .achievement-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .achievement-item.completed {
+            border-color: var(--tg-theme-link-color, #ffd700);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .achievement-icon {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .achievement-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .achievement-progress {
+            font-size: 12px;
+            color: #4CAF50;
+            margin-top: 5px;
+        }
+
+        .achievement-reward {
+            background: rgba(255,215,0,0.2);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #ffd700);
+        }
+
+        .auto-tapper-indicator {
+            background: rgba(0,255,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 1px solid rgba(0,255,0,0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--tg-theme-button-color, linear-gradient(45deg, #4CAF50, #45a049));
+            color: var(--tg-theme-button-text-color, white);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes levelUpPulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* Стили для экрана виллы */
+        .villa-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .villa-preview {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .villa-preview.unlocked {
+            border-color: var(--tg-theme-link-color, #ffd700);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .villa-preview.current {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            transform: scale(1.05);
+        }
+
+        .villa-preview-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .villa-preview-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .villa-preview-stage {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">🏗️ Villa Builder</h1>
+            
+            <div class="user-info" id="userInfo" style="display: none;">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Строитель</div>
+                    <div class="user-stats" id="userStats">Стадия виллы</div>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn active" id="gameBtn">🏗️<br>Строить</button>
+                <button class="nav-btn" id="villaBtn">🏡<br>Вилла</button>
+                <button class="nav-btn" id="shopBtn">🛒<br>Магазин</button>
+                <button class="nav-btn" id="achievementsBtn">🏆<br>Награды</button>
+                <button class="nav-btn" id="bonusBtn">⏰<br>Бонус</button>
+                <button class="nav-btn" id="telegramBtn">📱<br>Telegram</button>
+            </div>
+        </div>
+
+        <!-- Экран строительства -->
+        <div class="screen active" id="gameScreen">
+            <div class="villa-container">
+                <div class="villa-stage" id="villaStageIcon">🏕️</div>
+                <div class="villa-name" id="villaStageName">Лагерь под открытым небом</div>
+                <div class="villa-description" id="villaStageDescription">Простая стоянка для путешественника</div>
+                
+                <div class="villa-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="villaProgressFill"></div>
+                    </div>
+                    <div class="progress-text" id="villaProgressText">0 / 100</div>
+                </div>
+            </div>
+
+            <div class="score-display">
+                <div class="score" id="scoreDisplay">0</div>
+                <div class="score-label">Материалы</div>
+            </div>
+
+            <button class="build-button" id="buildButton">
+                🔨<br>СТРОИТЬ!
+            </button>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="villaStageDisplay">1</div>
+                    <div class="stat-label">Стадия</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="tapsDisplay">0</div>
+                    <div class="stat-label">Действия</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="materialsPerTapDisplay">1</div>
+                    <div class="stat-label">За действие</div>
+                </div>
+            </div>
+
+            <div class="auto-tapper-indicator" id="autoTapperIndicator" style="display: none;">
+                🤖 Автостроитель: <span id="autoTapperRate">0</span> действий/сек
+            </div>
+        </div>
+
+        <!-- Экран галереи вилл -->
+        <div class="screen" id="villaScreen">
+            <div class="score-display">
+                <div class="score" id="villaStageCounter">1 / 31</div>
+                <div class="score-label">Прогресс строительства</div>
+            </div>
+
+            <div class="villa-gallery" id="villaGallery">
+                <!-- Галерея будет заполнена через JavaScript -->
+            </div>
+        </div>
+
+        <!-- Экран магазина -->
+        <div class="screen" id="shopScreen">
+            <div class="score-display">
+                <div class="score" id="shopScoreDisplay">0</div>
+                <div class="score-label">Доступно материалов</div>
+            </div>
+            <div id="shopItems"></div>
+        </div>
+
+        <!-- Экран достижений -->
+        <div class="screen" id="achievementsScreen">
+            <div class="score-display">
+                <div class="score" id="achievementsCount">0/15</div>
+                <div class="score-label">Достижения получено</div>
+            </div>
+            <div id="achievementsList"></div>
+        </div>
+
+        <!-- Экран ежедневных бонусов -->
+        <div class="screen" id="bonusScreen">
+            <div class="daily-bonus">
+                <div class="daily-bonus-title">🎁 Ежедневный бонус</div>
+                <div class="daily-bonus-info" id="bonusInfo">
+                    <div>📅 День подряд: <span id="streakCount">1</span></div>
+                    <div>🧱 Награда: <span id="bonusReward">100</span> материалов</div>
+                    <div>⏰ Следующий бонус: <span id="nextBonusTime">доступен!</span></div>
+                </div>
+                <button class="claim-btn" id="claimBonusBtn">Получить бонус!</button>
+            </div>
+
+            <div class="score-display">
+                <div class="score" id="bonusScoreDisplay">0</div>
+                <div class="score-label">Всего получено бонусов</div>
+            </div>
+        </div>
+
+        <!-- Экран Telegram функций -->
+        <div class="screen" id="telegramScreen">
+            <div class="telegram-features">
+                <h3>📱 Telegram функции</h3>
+                
+                <button class="share-btn" id="shareGameBtn">
+                    🚀 Поделиться виллой с друзьями
+                </button>
+                
+                <button class="feature-btn" id="showAlertBtn">
+                    🔔 Показать уведомление
+                </button>
+                
+                <button class="feature-btn" id="hapticBtn">
+                    📳 Вибрация
+                </button>
+                
+                <button class="feature-btn" id="closeAppBtn">
+                    ❌ Закрыть приложение
+                </button>
+            </div>
+
+            <div class="score-display">
+                <div class="score" id="telegramStatus">❌</div>
+                <div class="score-label">Статус Telegram API</div>
+            </div>
+
+            <div class="telegram-features">
+                <h3>ℹ️ Информация о пользователе</h3>
+                <div id="telegramUserInfo">
+                    <p>Загрузка данных...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Игровые переменные
+        let score = 0; // Теперь это "материалы"
+        let totalTaps = 0;
+        let villaStage = 1; // Стадия виллы (1-31)
+        let materialsPerTap = 1;
+        let autoTapperRate = 0;
+        let villaProgress = 0; // Прогресс к следующей стадии
+
+        // Переменные для бонусов и достижений
+        let dailyBonusStreak = 0;
+        let lastBonusDate = null;
+        let totalBonusClaimed = 0;
+        let completedAchievements = new Set();
+
+        // Telegram переменные
+        let tg = window.Telegram?.WebApp;
+        let telegramUser = null;
+
+        // 31 стадия развития виллы
+        const villaStages = [
+            { icon: '🏕️', name: 'Лагерь под открытым небом', description: 'Простая стоянка для путешественника', cost: 0 },
+            { icon: '🌿', name: 'Шалаш из веток', description: 'Первое укрытие из природных материалов', cost: 100 },
+            { icon: '🕳️', name: 'Землянка', description: 'Уютное убежище в земле', cost: 250 },
+            { icon: '⛺', name: 'Палатка', description: 'Переносное жилище путешественника', cost: 500 },
+            { icon: '🛖', name: 'Хижина', description: 'Простая деревянная постройка', cost: 1000 },
+            { icon: '🏚️', name: 'Ветхий домик', description: 'Старый, но надежный дом', cost: 2000 },
+            { icon: '🏘️', name: 'Деревенский дом', description: 'Уютный сельский домик', cost: 4000 },
+            { icon: '🏠', name: 'Обычный дом', description: 'Стандартный городской дом', cost: 8000 },
+            { icon: '🏡', name: 'Коттедж', description: 'Красивый загородный дом', cost: 15000 },
+            { icon: '🏘️', name: 'Таунхаус', description: 'Современный многоуровневый дом', cost: 25000 },
+            { icon: '🏢', name: 'Небольшой особняк', description: 'Элегантное двухэтажное строение', cost: 40000 },
+            { icon: '🏛️', name: 'Классический особняк', description: 'Дом в классическом стиле', cost: 65000 },
+            { icon: '🏰', name: 'Мини-замок', description: 'Небольшая крепость с башней', cost: 100000 },
+            { icon: '🏯', name: 'Восточный дворец', description: 'Изящное строение в восточном стиле', cost: 150000 },
+            { icon: '🕌', name: 'Купольный дворец', description: 'Роскошный дворец с куполами', cost: 220000 },
+            { icon: '⛪', name: 'Готический особняк', description: 'Мрачное величественное здание', cost: 320000 },
+            { icon: '🏛️', name: 'Греческая вилла', description: 'Элегантная вилла с колоннами', cost: 450000 },
+            { icon: '🏰', name: 'Средневековый замок', description: 'Настоящая крепость с башнями', cost: 650000 },
+            { icon: '🏯', name: 'Императорский дворец', description: 'Роскошная резиденция правителя', cost: 900000 },
+            { icon: '🕌', name: 'Султанский дворец', description: 'Восточная роскошь и великолепие', cost: 1300000 },
+            { icon: '⛩️', name: 'Храмовый комплекс', description: 'Священное место силы и красоты', cost: 1800000 },
+            { icon: '🏛️', name: 'Римская вилла', description: 'Классическое величие древнего Рима', cost: 2500000 },
+            { icon: '🏰', name: 'Королевский замок', description: 'Резиденция монарха со всеми удобствами', cost: 3500000 },
+            { icon: '🕌', name: 'Золотой дворец', description: 'Сверкающий дворец из драгоценных металлов', cost: 5000000 },
+            { icon: '🏯', name: 'Небесный дворец', description: 'Парящее в облаках чудо архитектуры', cost: 7000000 },
+            { icon: '⛩️', name: 'Хрустальный замок', description: 'Прозрачное чудо из магических кристаллов', cost: 10000000 },
+            { icon: '🏛️', name: 'Платиновая вилла', description: 'Блестящее творение мастеров', cost: 15000000 },
+            { icon: '🏰', name: 'Алмазный дворец', description: 'Сверкающее великолепие из драгоценных камней', cost: 22000000 },
+            { icon: '🕌', name: 'Радужный замок', description: 'Магическое строение всех цветов радуги', cost: 32000000 },
+            { icon: '🏯', name: 'Космическая станция', description: 'Футуристическое жилище среди звезд', cost: 50000000 },
+            { icon: '🏰', name: 'Замок на берегу моря', description: 'Роскошный замок с видом на бесконечный океан', cost: 100000000 }
+        ];
+
+        // DOM элементы
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const shopScoreDisplay = document.getElementById('shopScoreDisplay');
+        const bonusScoreDisplay = document.getElementById('bonusScoreDisplay');
+        const villaStageDisplay = document.getElementById('villaStageDisplay');
+        const villaStageCounter = document.getElementById('villaStageCounter');
+        const tapsDisplay = document.getElementById('tapsDisplay');
+        const materialsPerTapDisplay = document.getElementById('materialsPerTapDisplay');
+        const buildButton = document.getElementById('buildButton');
+        const autoTapperIndicator = document.getElementById('autoTapperIndicator');
+        const autoTapperRate_display = document.getElementById('autoTapperRate');
+        const achievementsCount = document.getElementById('achievementsCount');
+
+        // Элементы виллы
+        const villaStageIcon = document.getElementById('villaStageIcon');
+        const villaStageName = document.getElementById('villaStageName');
+        const villaStageDescription = document.getElementById('villaStageDescription');
+        const villaProgressFill = document.getElementById('villaProgressFill');
+        const villaProgressText = document.getElementById('villaProgressText');
+        const villaGallery = document.getElementById('villaGallery');
+
+        // Навигация
+        const gameBtn = document.getElementById('gameBtn');
+        const villaBtn = document.getElementById('villaBtn');
+        const shopBtn = document.getElementById('shopBtn');
+        const achievementsBtn = document.getElementById('achievementsBtn');
+        const bonusBtn = document.getElementById('bonusBtn');
+        const telegramBtn = document.getElementById('telegramBtn');
+        const gameScreen = document.getElementById('gameScreen');
+        const villaScreen = document.getElementById('villaScreen');
+        const shopScreen = document.getElementById('shopScreen');
+        const achievementsScreen = document.getElementById('achievementsScreen');
+        const bonusScreen = document.getElementById('bonusScreen');
+        const telegramScreen = document.getElementById('telegramScreen');
+        const shopItems = document.getElementById('shopItems');
+        const achievementsList = document.getElementById('achievementsList');
+
+        // Бонусы
+        const streakCount = document.getElementById('streakCount');
+        const bonusReward = document.getElementById('bonusReward');
+        const nextBonusTime = document.getElementById('nextBonusTime');
+        const claimBonusBtn = document.getElementById('claimBonusBtn');
+
+        // Пользователь
+        const userInfo = document.getElementById('userInfo');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userStats = document.getElementById('userStats');
+
+        // Telegram элементы
+        const telegramStatus = document.getElementById('telegramStatus');
+        const telegramUserInfo = document.getElementById('telegramUserInfo');
+        const shareGameBtn = document.getElementById('shareGameBtn');
+        const showAlertBtn = document.getElementById('showAlertBtn');
+        const hapticBtn = document.getElementById('hapticBtn');
+        const closeAppBtn = document.getElementById('closeAppBtn');
+
+        // Данные магазина (переименованы под строительную тематику)
+        const shopData = {
+            autoBuilder: {
+                name: '🤖 Автостроитель',
+                description: 'Автоматически строит за тебя каждую секунду',
+                basePrice: 50,
+                level: 0,
+                maxLevel: 10,
+                priceMultiplier: 2,
+                effect: 1
+            },
+            efficiency: {
+                name: '⚡ Эффективность', 
+                description: 'Увеличивает количество материалов за действие',
+                basePrice: 25,
+                level: 0,
+                maxLevel: 20,
+                priceMultiplier: 1.8,
+                effect: 1
+            },
+            workers: {
+                name: '👷 Бригада рабочих',
+                description: 'Ускоряет прогресс строительства',
+                basePrice: 100,
+                level: 0,
+                maxLevel: 5,
+                priceMultiplier: 3,
+                effect: 1
+            }
+        };
+
+        // Достижения (обновлены под строительную тематику)
+        const achievements = [
+            {
+                id: 'first_build',
+                title: 'Первый строитель',
+                description: 'Сделай первое строительное действие',
+                icon: '🔨',
+                reward: 10,
+                condition: () => totalTaps >= 1
+            },
+            {
+                id: 'build_master',
+                title: 'Мастер строитель',
+                description: 'Сделай 100 строительных действий',
+                icon: '👷',
+                reward: 100,
+                condition: () => totalTaps >= 100
+            },
+            {
+                id: 'villa_stage_3',
+                title: 'Начинающий архитектор',
+                description: 'Достигни 3 стадии виллы',
+                icon: '🏠',
+                reward: 200,
+                condition: () => villaStage >= 3
+            },
+            {
+                id: 'villa_stage_10',
+                title: 'Опытный строитель',
+                description: 'Достигни 10 стадии виллы',
+                icon: '🏘️',
+                reward: 1000,
+                condition: () => villaStage >= 10
+            },
+            {
+                id: 'villa_stage_20',
+                title: 'Великий архитектор',
+                description: 'Достигни 20 стадии виллы',
+                icon: '🏰',
+                reward: 10000,
+                condition: () => villaStage >= 20
+            },
+            {
+                id: 'material_collector',
+                title: 'Сборщик материалов',
+                description: 'Накопи 1000 материалов',
+                icon: '🧱',
+                reward: 100,
+                condition: () => score >= 1000
+            },
+            {
+                id: 'material_master',
+                title: 'Магнат материалов',
+                description: 'Накопи 100000 материалов',
+                icon: '💎',
+                reward: 5000,
+                condition: () => score >= 100000
+            },
+            {
+                id: 'first_purchase',
+                title: 'Первая покупка',
+                description: 'Купи любое улучшение',
+                icon: '🛒',
+                reward: 25,
+                condition: () => Object.values(shopData).some(item => item.level > 0)
+            },
+            {
+                id: 'auto_builder',
+                title: 'Автоматизация',
+                description: 'Купи автостроителя',
+                icon: '🤖',
+                reward: 150,
+                condition: () => shopData.autoBuilder.level > 0
+            },
+            {
+                id: 'efficiency_master',
+                title: 'Мастер эффективности',
+                description: 'Прокачай эффективность до уровня 5',
+                icon: '⚡',
+                reward: 300,
+                condition: () => shopData.efficiency.level >= 5
+            },
+            {
+                id: 'daily_bonus',
+                title: 'Постоянный строитель',
+                description: 'Получи ежедневный бонус 3 дня подряд',
+                icon: '📅',
+                reward: 500,
+                condition: () => dailyBonusStreak >= 3
+            },
+            {
+                id: 'telegram_user',
+                title: 'Telegram строитель',
+                description: 'Войди через Telegram',
+                icon: '📱',
+                reward: 500,
+                condition: () => telegramUser !== null
+            },
+            {
+                id: 'castle_builder',
+                title: 'Строитель замков',
+                description: 'Достигни финальной стадии виллы',
+                icon: '🏰',
+                reward: 50000,
+                condition: () => villaStage >= 31
+            },
+            {
+                id: 'achievement_hunter',
+                title: 'Охотник за достижениями',
+                description: 'Получи 10 достижений',
+                icon: '🏆',
+                reward: 2000,
+                condition: () => completedAchievements.size >= 10
+            },
+            {
+                id: 'legendary_builder',
+                title: 'Легендарный строитель',
+                description: 'Сделай 10000 строительных действий',
+                icon: '👑',
+                reward: 25000,
+                condition: () => totalTaps >= 10000
+            }
+        ];
+
+        // Функция получения стоимости следующей стадии
+        function getNextStageCost() {
+            if (villaStage >= villaStages.length) return 0;
+            return villaStages[villaStage].cost;
+        }
+
+        // Обновление информации о вилле
+        function updateVillaDisplay() {
+            const currentStage = villaStages[villaStage - 1];
+            villaStageIcon.textContent = currentStage.icon;
+            villaStageName.textContent = currentStage.name;
+            villaStageDescription.textContent = currentStage.description;
+            
+            const nextCost = getNextStageCost();
+            if (nextCost > 0) {
+                const progressPercent = Math.min((villaProgress / nextCost) * 100, 100);
+                villaProgressFill.style.width = progressPercent + '%';
+                villaProgressText.textContent = `${villaProgress.toLocaleString()} / ${nextCost.toLocaleString()}`;
+            } else {
+                villaProgressFill.style.width = '100%';
+                villaProgressText.textContent = 'ЗАВЕРШЕНО!';
+            }
+            
+            villaStageDisplay.textContent = villaStage;
+            villaStageCounter.textContent = `${villaStage} / ${villaStages.length}`;
+        }
+
+        // Функция повышения стадии виллы
+        function upgradeVilla() {
+            const nextCost = getNextStageCost();
+            
+            if (villaProgress >= nextCost && villaStage < villaStages.length) {
+                villaProgress -= nextCost;
+                villaStage++;
+                
+                // Показываем уведомление о новой стадии
+                const newStage = villaStages[villaStage - 1];
+                showVillaUnlock(newStage);
+                
+                // Вибрация при повышении стадии
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('heavy');
+                }
+                
+                updateVillaDisplay();
+                updateVillaGallery();
+                displayUserInfo();
+                checkAchievements();
+            }
+        }
+
+        // Показ уведомления о новой стадии виллы
+        function showVillaUnlock(stage) {
+            const unlockNotification = document.createElement('div');
+            unlockNotification.className = 'villa-unlock';
+            unlockNotification.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 10px;">${stage.icon}</div>
+                <div style="font-size: 18px; margin-bottom: 10px;">🎉 НОВАЯ СТАДИЯ!</div>
+                <div style="font-size: 16px; margin-bottom: 5px;">${stage.name}</div>
+                <div style="font-size: 14px; opacity: 0.8;">${stage.description}</div>
+            `;
+            
+            document.body.appendChild(unlockNotification);
+            
+            setTimeout(() => {
+                if (document.body.contains(unlockNotification)) {
+                    document.body.removeChild(unlockNotification);
+                }
+            }, 3000);
+        }
+
+        // Обновление галереи вилл
+        function updateVillaGallery() {
+            let galleryHTML = '';
+            
+            villaStages.forEach((stage, index) => {
+                const stageNumber = index + 1;
+                const isUnlocked = stageNumber <= villaStage;
+                const isCurrent = stageNumber === villaStage;
+                
+                galleryHTML += `
+                    <div class="villa-preview ${isUnlocked ? 'unlocked' : ''} ${isCurrent ? 'current' : ''}">
+                        <div class="villa-preview-icon">${isUnlocked ? stage.icon : '🔒'}</div>
+                        <div class="villa-preview-name">${isUnlocked ? stage.name : '???'}</div>
+                        <div class="villa-preview-stage">Стадия ${stageNumber}</div>
+                    </div>
+                `;
+            });
+            
+            villaGallery.innerHTML = galleryHTML;
+        }
+
+        // Инициализация Telegram
+        function initTelegram() {
+            if (tg) {
+                try {
+                    tg.ready();
+                    tg.expand();
+                    
+                    telegramUser = tg.initDataUnsafe?.user;
+                    
+                    if (telegramUser) {
+                        displayUserInfo();
+                        telegramStatus.textContent = '✅';
+                        telegramStatus.parentElement.querySelector('.score-label').textContent = 'Telegram подключен';
+                        checkTelegramBonus();
+                    } else {
+                        telegramStatus.textContent = '⚠️';
+                        telegramStatus.parentElement.querySelector('.score-label').textContent = 'Данные недоступны';
+                    }
+                    
+                    updateTelegramInfo();
+                } catch (error) {
+                    console.error('Ошибка Telegram:', error);
+                    telegramStatus.textContent = '❌';
+                }
+            } else {
+                telegramStatus.textContent = '🌐';
+                telegramStatus.parentElement.querySelector('.score-label').textContent = 'Режим браузера';
+                
+                // Демо для браузера
+                telegramUser = {
+                    id: 123456789,
+                    first_name: 'Строитель',
+                    username: 'demo_builder'
+                };
+                displayUserInfo();
+                updateTelegramInfo();
+            }
+        }
+
+        // Отображение пользователя
+        function displayUserInfo() {
+            if (telegramUser) {
+                userInfo.style.display = 'flex';
+                const fullName = `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim();
+                userName.textContent = fullName || telegramUser.username || 'Строитель';
+                const firstLetter = (telegramUser.first_name || telegramUser.username || 'С')[0].toUpperCase();
+                userAvatar.textContent = firstLetter;
+                
+                const currentStage = villaStages[villaStage - 1];
+                userStats.textContent = `${currentStage.name} | Стадия ${villaStage}`;
+            }
+        }
+
+        // Обновление Telegram инфо
+        function updateTelegramInfo() {
+            if (telegramUser) {
+                telegramUserInfo.innerHTML = `
+                    <p><strong>Имя:</strong> ${telegramUser.first_name || 'Не указано'}</p>
+                    <p><strong>Username:</strong> @${telegramUser.username || 'не указан'}</p>
+                    <p><strong>ID:</strong> ${telegramUser.id}</p>
+                    <p><strong>Язык:</strong> ${telegramUser.language_code || 'ru'}</p>
+                    <p><strong>Стадия виллы:</strong> ${villaStage} / ${villaStages.length}</p>
+                `;
+            } else {
+                telegramUserInfo.innerHTML = '<p>Данные пользователя недоступны</p>';
+            }
+        }
+
+        // Бонус за Telegram
+        function checkTelegramBonus() {
+            const savedData = localStorage.getItem('villaBuilderGame');
+            let gameData = savedData ? JSON.parse(savedData) : {};
+            
+            if (!gameData.telegramBonusReceived && telegramUser) {
+                score += 500;
+                gameData.telegramBonusReceived = true;
+                localStorage.setItem('villaBuilderGame', JSON.stringify(gameData));
+                showNotification('🎉 Бонус за Telegram! +500 материалов');
+                updateDisplay();
+            }
+        }
+
+        // Поделиться игрой
+        function shareGame() {
+            const currentStage = villaStages[villaStage - 1];
+            const shareText = `🏗️ Строю свою виллу в Villa Builder! 
+            
+Уже достиг стадии: ${currentStage.name} ${currentStage.icon}
+Материалов: ${score.toLocaleString()}
+Стадия: ${villaStage} / ${villaStages.length}
+
+Присоединяйся и построй свой замок! 🏰`;
+            
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(`https://t.me/share/url?url=https://t.me/your_bot&text=${encodeURIComponent(shareText)}`);
+            } else {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Villa Builder Game',
+                        text: shareText
+                    });
+                } else {
+                    navigator.clipboard.writeText(shareText);
+                    showNotification('📋 Текст скопирован в буфер обмена!');
+                }
+            }
+        }
+
+        // Показать уведомление
+        function showAlert() {
+            if (tg && tg.showAlert) {
+                tg.showAlert(`🏰 Твоя текущая вилла: ${villaStages[villaStage - 1].name}!`);
+            } else {
+                alert(`🏰 Твоя текущая вилла: ${villaStages[villaStage - 1].name}!`);
+            }
+        }
+
+        // Вибрация
+        function hapticFeedback() {
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            } else if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+            showNotification('📳 Вибрация активирована!');
+        }
+
+        // Закрыть приложение
+        function closeApp() {
+            if (tg && tg.close) {
+                tg.close();
+            } else {
+                showNotification('❌ Закрытие доступно только в Telegram');
+            }
+        }
+
+        // Остальные функции игры
+        function showNotification(text, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = text;
+            
+            if (type === 'achievement') {
+                notification.style.background = 'linear-gradient(45deg, #ffd700, #ffed4e)';
+                notification.style.color = '#333';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        function handleBuild(event) {
+            score += materialsPerTap;
+            villaProgress += materialsPerTap;
+            totalTaps++;
+            
+            // Проверяем возможность повышения стадии
+            upgradeVilla();
+            
+            // Вибрация при строительстве в Telegram
+            if (tg && tg.HapticFeedback && Math.random() > 0.8) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            
+            if (event) {
+                const rect = buildButton.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                createFloatingPoints(x, y, materialsPerTap);
+            }
+            
+            updateDisplay();
+            updateVillaDisplay();
+            saveGame();
+            checkAchievements();
+        }
+
+        function createFloatingPoints(x, y, points) {
+            const floatingDiv = document.createElement('div');
+            floatingDiv.textContent = '+' + points;
+            floatingDiv.className = 'floating-points';
+            floatingDiv.style.left = x + 'px';
+            floatingDiv.style.top = y + 'px';
+            
+            document.body.appendChild(floatingDiv);
+            
+            setTimeout(() => {
+                if (document.body.contains(floatingDiv)) {
+                    document.body.removeChild(floatingDiv);
+                }
+            }, 1000);
+        }
+
+        function checkAchievements() {
+            achievements.forEach(achievement => {
+                if (!completedAchievements.has(achievement.id) && achievement.condition()) {
+                    completedAchievements.add(achievement.id);
+                    score += achievement.reward;
+                    showNotification(`🏆 Достижение "${achievement.title}"! +${achievement.reward} материалов`, 'achievement');
+                }
+            });
+            updateAchievements();
+        }
+
+        function updateAchievements() {
+            let achievementsHTML = '';
+            
+            achievements.forEach(achievement => {
+                const completed = completedAchievements.has(achievement.id);
+                
+                achievementsHTML += `
+                    <div class="achievement-item ${completed ? 'completed' : ''}">
+                        <div class="achievement-icon">${achievement.icon}</div>
+                        <div class="achievement-info">
+                            <div class="achievement-title">${achievement.title}</div>
+                            <div class="achievement-description">${achievement.description}</div>
+                        </div>
+                        <div class="achievement-reward">+${achievement.reward} 🧱</div>
+                    </div>
+                `;
+            });
+            
+            achievementsList.innerHTML = achievementsHTML;
+            achievementsCount.textContent = `${completedAchievements.size}/${achievements.length}`;
+        }
+
+        function updateDailyBonus() {
+            const today = new Date().toDateString();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayString = yesterday.toDateString();
+
+            let canClaim = false;
+
+            if (!lastBonusDate) {
+                canClaim = true;
+                dailyBonusStreak = 0;
+            } else if (lastBonusDate === today) {
+                canClaim = false;
+            } else if (lastBonusDate === yesterdayString) {
+                canClaim = true;
+            } else {
+                canClaim = true;
+                dailyBonusStreak = 0;
+            }
+
+            const bonusAmount = Math.max(100, dailyBonusStreak * 50);
+            
+            streakCount.textContent = dailyBonusStreak;
+            bonusReward.textContent = bonusAmount;
+            nextBonusTime.textContent = canClaim ? 'доступен!' : 'завтра';
+            claimBonusBtn.disabled = !canClaim;
+            claimBonusBtn.textContent = canClaim ? 'Получить бонус!' : 'Уже получен сегодня';
+        }
+
+        function claimDailyBonus() {
+            const today = new Date().toDateString();
+            const bonusAmount = Math.max(100, dailyBonusStreak * 50);
+            
+            score += bonusAmount;
+            villaProgress += bonusAmount;
+            dailyBonusStreak++;
+            lastBonusDate = today;
+            totalBonusClaimed++;
+            
+            upgradeVilla(); // Проверяем повышение стадии после бонуса
+            
+            showNotification(`🎁 Получен ежедневный бонус! +${bonusAmount} материалов`);
+            updateDailyBonus();
+            updateDisplay();
+            updateVillaDisplay();
+            saveGame();
+            checkAchievements();
+        }
+
+        function getItemPrice(itemKey) {
+            const item = shopData[itemKey];
+            return Math.floor(item.basePrice * Math.pow(item.priceMultiplier, item.level));
+        }
+
+        function createShopItemHTML(itemKey) {
+            const item = shopData[itemKey];
+            const price = getItemPrice(itemKey);
+            const canAfford = score >= price;
+            const isMaxLevel = item.level >= item.maxLevel;
+
+            return `
+                <div class="shop-item">
+                    <div class="shop-item-header">
+                        <div class="shop-item-title">${item.name}</div>
+                        <div class="shop-item-level">Ур. ${item.level}/${item.maxLevel}</div>
+                    </div>
+                    <div class="shop-item-description">${item.description}</div>
+                    <div class="shop-item-footer">
+                        <div class="shop-item-price">${isMaxLevel ? 'МАКС' : price + ' 🧱'}</div>
+                        <button class="buy-btn" 
+                                onclick="buyItem('${itemKey}')" 
+                                ${!canAfford || isMaxLevel ? 'disabled' : ''}>
+                            ${isMaxLevel ? 'МАКС' : (canAfford ? 'Купить' : 'Мало материалов')}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyItem(itemKey) {
+            const item = shopData[itemKey];
+            const price = getItemPrice(itemKey);
+
+            if (score >= price && item.level < item.maxLevel) {
+                score -= price;
+                item.level++;
+
+                applyItemEffect(itemKey);
+                updateDisplay();
+                updateShop();
+                saveGame();
+                checkAchievements();
+
+                showNotification(`Куплен ${item.name}, уровень ${item.level}`);
+            }
+        }
+
+        function applyItemEffect(itemKey) {
+            const item = shopData[itemKey];
+
+            switch(itemKey) {
+                case 'autoBuilder':
+                    autoTapperRate = item.level * item.effect;
+                    updateAutoTapperDisplay();
+                    break;
+                    
+                case 'efficiency':
+                    materialsPerTap = 1 + (item.level * item.effect);
+                    break;
+                    
+                case 'workers':
+                    // Бонус к скорости строительства применяется в handleBuild
+                    break;
+            }
+        }
+
+        function updateAutoTapperDisplay() {
+            if (autoTapperRate > 0) {
+                autoTapperIndicator.style.display = 'block';
+                autoTapperRate_display.textContent = autoTapperRate;
+            } else {
+                autoTapperIndicator.style.display = 'none';
+            }
+        }
+
+        function updateShop() {
+            let shopHTML = '';
+            
+            for (let itemKey in shopData) {
+                shopHTML += createShopItemHTML(itemKey);
+            }
+            
+            shopItems.innerHTML = shopHTML;
+            shopScoreDisplay.textContent = score.toLocaleString();
+        }
+
+        function updateDisplay() {
+            scoreDisplay.textContent = score.toLocaleString();
+            shopScoreDisplay.textContent = score.toLocaleString();
+            bonusScoreDisplay.textContent = totalBonusClaimed;
+            villaStageDisplay.textContent = villaStage;
+            tapsDisplay.textContent = totalTaps;
+            materialsPerTapDisplay.textContent = materialsPerTap;
+        }
+
+        function switchScreen(targetScreen) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+
+            if (targetScreen === 'game') {
+                gameBtn.classList.add('active');
+                gameScreen.classList.add('active');
+            } else if (targetScreen === 'villa') {
+                villaBtn.classList.add('active');
+                villaScreen.classList.add('active');
+                updateVillaGallery();
+            } else if (targetScreen === 'shop') {
+                shopBtn.classList.add('active');
+                shopScreen.classList.add('active');
+                updateShop();
+            } else if (targetScreen === 'achievements') {
+                achievementsBtn.classList.add('active');
+                achievementsScreen.classList.add('active');
+                updateAchievements();
+            } else if (targetScreen === 'bonus') {
+                bonusBtn.classList.add('active');
+                bonusScreen.classList.add('active');
+                updateDailyBonus();
+            } else if (targetScreen === 'telegram') {
+                telegramBtn.classList.add('active');
+                telegramScreen.classList.add('active');
+            }
+        }
+
+        function autoTap() {
+            if (autoTapperRate > 0) {
+                for (let i = 0; i < autoTapperRate; i++) {
+                    handleBuild();
+                }
+            }
+        }
+
+        function saveGame() {
+            const gameData = {
+                score: score,
+                totalTaps: totalTaps,
+                villaStage: villaStage,
+                materialsPerTap: materialsPerTap,
+                villaProgress: villaProgress,
+                autoTapperRate: autoTapperRate,
+                shopData: shopData,
+                dailyBonusStreak: dailyBonusStreak,
+                lastBonusDate: lastBonusDate,
+                totalBonusClaimed: totalBonusClaimed,
+                completedAchievements: Array.from(completedAchievements),
+                telegramBonusReceived: telegramUser ? true : false
+            };
+            
+            localStorage.setItem('villaBuilderGame', JSON.stringify(gameData));
+        }
+
+        function loadGame() {
+            const savedData = localStorage.getItem('villaBuilderGame');
+            
+            if (savedData) {
+                const gameData = JSON.parse(savedData);
+                
+                score = gameData.score || 0;
+                totalTaps = gameData.totalTaps || 0;
+                villaStage = gameData.villaStage || 1;
+                materialsPerTap = gameData.materialsPerTap || 1;
+                villaProgress = gameData.villaProgress || 0;
+                autoTapperRate = gameData.autoTapperRate || 0;
+                dailyBonusStreak = gameData.dailyBonusStreak || 0;
+                lastBonusDate = gameData.lastBonusDate || null;
+                totalBonusClaimed = gameData.totalBonusClaimed || 0;
+                
+                if (gameData.shopData) {
+                    Object.assign(shopData, gameData.shopData);
+                }
+                
+                if (gameData.completedAchievements) {
+                    completedAchievements = new Set(gameData.completedAchievements);
+                }
+                
+                for (let itemKey in shopData) {
+                    applyItemEffect(itemKey);
+                }
+                
+                updateDisplay();
+                updateVillaDisplay();
+                updateAutoTapperDisplay();
+                updateDailyBonus();
+                updateVillaGallery();
+            }
+        }
+
+        // Привязка событий
+        buildButton.addEventListener('click', handleBuild);
+        gameBtn.addEventListener('click', () => switchScreen('game'));
+        villaBtn.addEventListener('click', () => switchScreen('villa'));
+        shopBtn.addEventListener('click', () => switchScreen('shop'));
+        achievementsBtn.addEventListener('click', () => switchScreen('achievements'));
+        bonusBtn.addEventListener('click', () => switchScreen('bonus'));
+        telegramBtn.addEventListener('click', () => switchScreen('telegram'));
+        claimBonusBtn.addEventListener('click', claimDailyBonus);
+
+        // Telegram кнопки
+        shareGameBtn.addEventListener('click', shareGame);
+        showAlertBtn.addEventListener('click', showAlert);
+        hapticBtn.addEventListener('click', hapticFeedback);
+        closeAppBtn.addEventListener('click', closeApp);
+
+        // Запуск игры
+        setInterval(autoTap, 1000);
+        initTelegram();
+        loadGame();
+
+        console.log('🏗️ Villa Builder загружен!');
+        console.log('🏰 Стадий вилл: 31');
+        console.log('📱 Статус Telegram:', tg ? 'Подключен' : 'Не подключен');
+    </script>
+</body>
+</html>
